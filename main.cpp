@@ -1,7 +1,12 @@
-#include <windows.h>
+#ifdef __APPLE__
+	#include <GLUT/glut.h>
+#elif _WIN32
+	#include <windows.h>
+	#include <GL/glut.h>
+#endif
+
 #include <float.h>
 #include <math.h>
-#include <GL/glut.h>
 #include <iostream>
 
 #define PI 3.1415926536
@@ -116,6 +121,7 @@ void setPixel(int x, int y, float r, float g, float b){
 
 bool finalProcess(octNode* node, int x, int y){
 	setPixel(x, y, node->rgb[0], node->rgb[1], node->rgb[2]);
+	return true;
 }
 
 int firstProcess(double tMinX, double tMinY, double tMinZ, double tMaxX, double tMaxY, double tMaxZ){
