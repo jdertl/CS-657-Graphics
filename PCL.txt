@@ -1,0 +1,11 @@
+http://docs.pointclouds.org/1.8.1/group__octree.html
+
+http://www.pointclouds.org/documentation/tutorials/
+
+https://github.com/PointCloudLibrary/pcl
+
+http://pointclouds.org/downloads/
+
+http://www.pointclouds.org/documentation/advanced/pcl_style_guide.php
+
+http://www.pointclouds.org/assets/icra2012/search.pdf
