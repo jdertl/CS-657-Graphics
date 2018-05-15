@@ -6,8 +6,10 @@
 #endif
 
 #include <float.h>
-#include <math.h>
 #include <iostream>
+#include <map>
+#include <math.h>
+#include <stdio.h>
 
 #define PI 3.1415926536
 
@@ -83,19 +85,11 @@ vec3 vp_w = {0.0, 0.0, -1.0};
 float vp_d = 1.0;
 
 int angle = 180;
-int height = 100;
-int width = 100;
+int height = 600;
+int width = 600;
 
-int maxDepth = 100;
-
-void deleteOctNode(octNode* node){
-	for(int i = 0; i < 8; i++){
-		if(node->nodes[i] != NULL){
-			deleteOctNode(node->nodes[i]);
-		}
-	}
-	delete[] node;
-}
+int maxRenderDepth = 1;
+int maxDepth = 50;
 
 float length(const vec3 &v){
 	return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
@@ -111,6 +105,9 @@ vec3 normalize(const vec3 &v){
 
 octree* tree;
 float* displayBuffer = NULL;
+
+bool displayOriginPlatform = true;
+
 
 void setPixel(int x, int y, float r, float g, float b){
 	float* pixel = &displayBuffer[(y * width * 3) + (x * 3)];
@@ -169,7 +166,7 @@ int nextProcess(double tX, int nextX, double tY, int nextY, double tZ, int nextZ
 
 bool subProcess(double tMinX, double tMinY, double tMinZ, double tMaxX, double tMaxY, double tMaxZ, int adjust, octNode* node, int depth, int x, int y){
 	if(node && tMaxX >= 0 && tMaxY >= 0 && tMaxZ >= 0){
-		if(depth == maxDepth || node->term){
+		if(depth == maxRenderDepth || node->term){
 			return finalProcess(node, x, y);
 		}
 		double tMidX = (tMinX + tMaxX) * 0.5;
@@ -265,15 +262,17 @@ void displayFunc(){
 		for(int x = 0; x < width; x++){
 			origin = viewpoint + (vp_u * ((1.0 / width) * (x + 0.5) - 0.5)) + (vp_v * ((1.0 / height) * (y + 0.5) - 0.5)) + (vp_w * vp_d);
 			dir = normalize(origin - viewpoint);
-			setPixel(x, y, 0.0, 0.0, 0.0);
+			setPixel(x, y, 0.2, 0.2, 0.2);
 
 			vec3 cutoff = origin + (100 * dir);
-			float u = origin.y / (origin.y - cutoff.y);
-			if(u >= 0){
-				float hitX = origin.x - ((origin.x - cutoff.x) * u);
-				float hitZ = origin.z - ((origin.z - cutoff.z) * u);
-				if(hitX >= -1 && hitX <= 1 && hitZ >= -1 && hitZ <= 1){
-					setPixel(x, y, 1.0, 0.0, 0.0);
+			if(displayOriginPlatform){
+				float u = origin.y / (origin.y - cutoff.y);
+				if(u >= 0){
+					float hitX = origin.x - ((origin.x - cutoff.x) * u);
+					float hitZ = origin.z - ((origin.z - cutoff.z) * u);
+					if(hitX >= -1 && hitX <= 1 && hitZ >= -1 && hitZ <= 1){
+						setPixel(x, y, 0.02, 0.02, 0.02);
+					}
 				}
 			}
 
@@ -285,6 +284,7 @@ void displayFunc(){
 	glFlush();
 	glutSwapBuffers();
 }
+
 
 void moveCamera(float x, float y, float z){
 	viewpoint.x += x;
@@ -341,9 +341,14 @@ void keyboardFunc(unsigned char key, int x, int y){
 		case 'E':
 			rotateCamera(-2);
 			break;
+		case 'z':
+		case 'Z':
+			displayOriginPlatform = !displayOriginPlatform;
+			break;
 	}
 	glutPostRedisplay();
 }
+
 
 void reshapeFunc(int newWidth, int newHeight){
 	glMatrixMode(GL_PROJECTION);
@@ -361,17 +366,24 @@ void reshapeFunc(int newWidth, int newHeight){
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+
 void specialFunc(int key, int x, int y){
 	switch(key){
 		case GLUT_KEY_UP:
-			maxDepth++;
-			break;
-		case GLUT_KEY_DOWN:
-			if(maxDepth > 1){
-				maxDepth--;
+			if(maxRenderDepth < maxDepth){
+				maxRenderDepth++;
 			}
 			break;
+		case GLUT_KEY_DOWN:
+			if(maxRenderDepth > 1){
+				maxRenderDepth--;
+			}
+			break;
+		case GLUT_KEY_LEFT:
+		case GLUT_KEY_RIGHT:
+			maxRenderDepth = 1;
 	}
+	cout << maxRenderDepth << endl;
 	glutPostRedisplay();
 }
 
@@ -413,4 +425,5 @@ int main(int argc, char** argv){
 	glutSpecialFunc(specialFunc);
 
 	glutMainLoop();
+	return 0;
 }
