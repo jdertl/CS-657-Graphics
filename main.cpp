@@ -421,6 +421,15 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float 
     //if presetBinLevel matches then we found the max depth of the tree
     //this node will be a terminal node
     //set color according to whatever points are left in the list
+    node->nodes[0] = nullptr;
+    node->nodes[1] = nullptr;
+    node->nodes[2] = nullptr;
+    node->nodes[3] = nullptr;
+    node->nodes[4] = nullptr;
+    node->nodes[5] = nullptr;
+    node->nodes[6] = nullptr;
+    node->nodes[7] = nullptr;
+
     if(level == presetBinLevel){
         float r = 0;
         float g = 0;
@@ -453,17 +462,17 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float 
     }
         //we can still go deeper and subdivide the current block into smaller blocks
         //using pretty much the same steps as for the root
-    else{
+    else {
         node->term = true;
 
         float midX, midY, midZ;
         float r = 0;
         float g = 0;
         float b = 0;
-
-        midX =(float) (tree->minX + tree->maxX) / 2;
-        midY =(float) (tree->minY + tree->maxY) / 2;
-        midZ =(float) (tree->minZ + tree->maxZ) / 2;
+        int j = 0;
+        midX = (float) (minX + maxX) / 2;
+        midY = (float) (minY + maxY) / 2;
+        midZ = (float) (minZ + maxZ) / 2;
 
         std::list<vec3> lowerFrontLeft;
         std::list<vec3> lowerFrontRight;
@@ -478,119 +487,142 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float 
 
         it = pointList.begin();
 
-        while(it != pointList.end()){
-            if ( comparePointMinMax(*(it),minX, midX, minY, midY, minZ, midZ)){
-                //in lowerFrontLeft
-                lowerFrontLeft.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),midX, maxX, minY, midY, minZ, midZ)){
-                //in lowerFrontRight
-                lowerFrontRight.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),minX, midX, midY, maxY, minZ, midZ)){
-                //in upperFrontLeft
-                upperFrontLeft.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),midX, maxX, midY, maxY, minZ, midZ)){
-                //in upperFrontRight
-                upperFrontRight.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),minX, midX, minY, midY, midZ, maxZ)){
-                //in lowerBackLeft
-                lowerBackLeft.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),midX, maxX, minY, midY, midZ, maxZ)){
-                //in lowerBackRight
-                lowerBackRight.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),minX, midX, midY, maxY, midZ, maxZ)){
-                //in upperBackLeft
-                upperBackLeft.push_back(*(it));
-            }
-            else if ( comparePointMinMax(*(it),midX, maxX, midY, maxY, midZ, maxZ)){
-                //in upperBackRight
-                upperBackRight.push_back(*(it));
-            }
-            it++;
-        }
+        if (pointList.size() == 1) {
+            node->term = true;
+            node->rgb[0] = (float) (it->r / 255);
+            node->rgb[1] = (float) (it->g / 255);
+            node->rgb[2] = (float) (it->b / 255);
+        } else {
 
-        //check size of list before istantiating as we might be able to just leave a null node
-        //if list is size 1 then this is a term node and we can just paint it here
-        //no need to go deeper
-        int count = 0;
+            while (it != pointList.end()) {
+                if (comparePointMinMax(*(it), minX, midX, minY, midY, minZ, midZ)) {
+                    //in lowerFrontLeft
+                    lowerFrontLeft.push_back(*(it));
+                } else if (comparePointMinMax(*(it), midX, maxX, minY, midY, minZ, midZ)) {
+                    //in lowerFrontRight
+                    lowerFrontRight.push_back(*(it));
+                } else if (comparePointMinMax(*(it), minX, midX, midY, maxY, minZ, midZ)) {
+                    //in upperFrontLeft
+                    upperFrontLeft.push_back(*(it));
+                } else if (comparePointMinMax(*(it), midX, maxX, midY, maxY, minZ, midZ)) {
+                    //in upperFrontRight
+                    upperFrontRight.push_back(*(it));
+                } else if (comparePointMinMax(*(it), minX, midX, minY, midY, midZ, maxZ)) {
+                    //in lowerBackLeft
+                    lowerBackLeft.push_back(*(it));
+                } else if (comparePointMinMax(*(it), midX, maxX, minY, midY, midZ, maxZ)) {
+                    //in lowerBackRight
+                    lowerBackRight.push_back(*(it));
+                } else if (comparePointMinMax(*(it), minX, midX, midY, maxY, midZ, maxZ)) {
+                    //in upperBackLeft
+                    upperBackLeft.push_back(*(it));
+                } else if (comparePointMinMax(*(it), midX, maxX, midY, maxY, midZ, maxZ)) {
+                    //in upperBackRight
+                    upperBackRight.push_back(*(it));
+                }
+                it++;
+                j++;
+            }
 
-        if(lowerFrontLeft.size() > 0){
-            node->nodes[0] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[0], lowerFrontLeft, minX, midX, minY, midY, minZ, midZ, level + 1);
-            r += node->nodes[0]->rgb[0];
-            g += node->nodes[0]->rgb[1];
-            b += node->nodes[0]->rgb[2];
-            count++;
-        }
-        if(lowerFrontRight.size() > 0){
-            node->nodes[1] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[1], lowerFrontRight,midX, maxX, minY, midY, minZ, midZ, level + 1);
-            r += node->nodes[1]->rgb[0];
-            g += node->nodes[1]->rgb[1];
-            b += node->nodes[1]->rgb[2];
-            count++;
-        }
-        if(upperFrontLeft.size() > 0){
-            node->nodes[2] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[2], upperFrontLeft, minX, midX, midY, maxY, minZ, midZ, level + 1);
-            r += node->nodes[2]->rgb[0];
-            g += node->nodes[2]->rgb[1];
-            b += node->nodes[2]->rgb[2];
-            count++;
-        }
-        if(upperFrontRight.size() > 0){
-            node->nodes[3] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[3], upperFrontRight,midX, maxX, midY, maxY, minZ, midZ, level + 1);
-            r += node->nodes[3]->rgb[0];
-            g += node->nodes[3]->rgb[1];
-            b += node->nodes[3]->rgb[2];
-            count++;
-        }
-        if(lowerBackLeft.size() > 0){
-            node->nodes[4] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[4], lowerBackLeft,  minX, midX, minY, midY, midZ, maxZ, level + 1);
-            r += node->nodes[4]->rgb[0];
-            g += node->nodes[4]->rgb[1];
-            b += node->nodes[4]->rgb[2];
-            count++;
-        }
-        if(lowerBackRight.size() > 0){
-            node->nodes[5] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[5], lowerBackRight, midX, maxX, minY, midY, midZ, maxZ, level + 1);
-            r += node->nodes[5]->rgb[0];
-            g += node->nodes[5]->rgb[1];
-            b += node->nodes[5]->rgb[2];
-            count++;
-        }
-        if(upperBackLeft.size() > 0){
-            node->nodes[6] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[6], upperBackLeft,  minX, midX, midY, maxY, midZ, maxZ, level + 1);
-            r += node->nodes[6]->rgb[0];
-            g += node->nodes[6]->rgb[1];
-            b += node->nodes[6]->rgb[2];
-            count++;
-        }
-        if(upperBackRight.size() > 0){
-            node->nodes[7] = (octNode*)malloc(sizeof(octNode));
-            BuildNode(node->nodes[7], upperBackRight, midX, maxX, midY, maxY, midZ, maxZ, level + 1);
-            r += node->nodes[7]->rgb[0];
-            g += node->nodes[7]->rgb[1];
-            b += node->nodes[7]->rgb[2];
-            count++;
-        }
+            int count = 0;
+
+            if (lowerFrontLeft.size() > 0) {
+
+                node->nodes[0] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[0], lowerFrontLeft, minX, midX, minY, midY, minZ, midZ, level + 1);
+                r += node->nodes[0]->rgb[0];
+                g += node->nodes[0]->rgb[1];
+                b += node->nodes[0]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (lowerFrontRight.size() > 0) {
+
+                node->nodes[1] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[1], lowerFrontRight, midX, maxX, minY, midY, minZ, midZ, level + 1);
+                r += node->nodes[1]->rgb[0];
+                g += node->nodes[1]->rgb[1];
+                b += node->nodes[1]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (upperFrontLeft.size() > 0) {
+
+                node->nodes[2] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[2], upperFrontLeft, minX, midX, midY, maxY, minZ, midZ, level + 1);
+                r += node->nodes[2]->rgb[0];
+                g += node->nodes[2]->rgb[1];
+                b += node->nodes[2]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (upperFrontRight.size() > 0) {
+
+                node->nodes[3] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[3], upperFrontRight, midX, maxX, midY, maxY, minZ, midZ, level + 1);
+                r += node->nodes[3]->rgb[0];
+                g += node->nodes[3]->rgb[1];
+                b += node->nodes[3]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (lowerBackLeft.size() > 0) {
+
+                node->nodes[4] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[4], lowerBackLeft, minX, midX, minY, midY, midZ, maxZ, level + 1);
+                r += node->nodes[4]->rgb[0];
+                g += node->nodes[4]->rgb[1];
+                b += node->nodes[4]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (lowerBackRight.size() > 0) {
+
+                node->nodes[5] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[5], lowerBackRight, midX, maxX, minY, midY, midZ, maxZ, level + 1);
+                r += node->nodes[5]->rgb[0];
+                g += node->nodes[5]->rgb[1];
+                b += node->nodes[5]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (upperBackLeft.size() > 0) {
+
+                node->nodes[6] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[6], upperBackLeft, minX, midX, midY, maxY, midZ, maxZ, level + 1);
+                r += node->nodes[6]->rgb[0];
+                g += node->nodes[6]->rgb[1];
+                b += node->nodes[6]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
+            if (upperBackRight.size() > 0) {
+
+                node->nodes[7] = (octNode *) malloc(sizeof(octNode));
+                BuildNode(node->nodes[7], upperBackRight, midX, maxX, midY, maxY, midZ, maxZ, level + 1);
+                r += node->nodes[7]->rgb[0];
+                g += node->nodes[7]->rgb[1];
+                b += node->nodes[7]->rgb[2];
+                count++;
+                node->term = false;
+
+            }
 
 
-        //assign color according to the average of the child nodes
+            //assign color according to the average of the child nodes
 
 
-        node->rgb[0] = (float)(r / count);
-        node->rgb[1] = (float)(g / count);
-        node->rgb[2] = (float)(b / count);
+            node->rgb[0] = (float) (r / count);
+            node->rgb[1] = (float) (g / count);
+            node->rgb[2] = (float) (b / count);
+        }
     }
 }
 
@@ -655,6 +687,21 @@ octree* createTree(octree *tree, cloud *pointCloud){
         }
     }
     tree->root->term = false;
+
+    tree->root->nodes[0] = nullptr;
+    tree->root->nodes[1] = nullptr;
+    tree->root->nodes[2] = nullptr;
+    tree->root->nodes[3] = nullptr;
+    tree->root->nodes[4] = nullptr;
+    tree->root->nodes[5] = nullptr;
+    tree->root->nodes[6] = nullptr;
+    tree->root->nodes[7] = nullptr;
+
+
+    ////build the nodes using the smaller lists of points and the respective min max values
+
+
+    ////find color for root
 
     int count = 0;
 
@@ -743,7 +790,7 @@ octree* readCloud(){
     cloud *pointCloud;
     octree *tree;
 
-    if ((fin=fopen("temp.ptx", "r"))==NULL){
+    if ((fin=fopen("bunny.ptx", "r"))==NULL){
         printf("read error...\n");
         exit(0);
     };
