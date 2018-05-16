@@ -3,6 +3,8 @@
 #elif _WIN32 
   #include <windows.h> 
   #include <GL/glut.h> 
+#elif __unix__
+ #include <GL/glut.h>
 #endif 
 #include <float.h>
 #include <iostream>
@@ -520,6 +522,15 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float 
 		node->nodes[6] = (octNode*)malloc(sizeof(octNode));
 		node->nodes[7] = (octNode*)malloc(sizeof(octNode));
 
+		node->nodes[0]->term = false;
+		node->nodes[1]->term = false;
+		node->nodes[2]->term = false;
+		node->nodes[3]->term = false;
+		node->nodes[4]->term = false;
+		node->nodes[5]->term = false;
+		node->nodes[6]->term = false;
+		node->nodes[7]->term = false;
+
         //find the child nodes for this node
         BuildNode(node->nodes[0], lowerFrontLeft, minX, midX, minY, midY, minZ, midZ, 0);
         BuildNode(node->nodes[1], lowerFrontRight,midX, maxX, minY, midY, minZ, midZ, 0);
@@ -611,6 +622,16 @@ octree* createTree(octree *tree, cloud *pointCloud){
 	tree->root->nodes[5] = (octNode*)malloc(sizeof(octNode));
 	tree->root->nodes[6] = (octNode*)malloc(sizeof(octNode));
 	tree->root->nodes[7] = (octNode*)malloc(sizeof(octNode));
+
+	tree->root->nodes[0]->term = false;
+	tree->root->nodes[1]->term = false;
+	tree->root->nodes[2]->term = false;
+	tree->root->nodes[3]->term = false;
+	tree->root->nodes[4]->term = false;
+	tree->root->nodes[5]->term = false;
+	tree->root->nodes[6]->term = false;
+	tree->root->nodes[7]->term = false;
+
     //build the nodes using the smaller lists of points and the respective min max values
     BuildNode(tree->root->nodes[0], lowerFrontLeft, tree->minX, midX, tree->minY, midY, tree->minZ, midZ, 0);
     BuildNode(tree->root->nodes[1], lowerFrontRight,midX, tree->maxX, tree->minY, midY, tree->minZ, midZ, 0);
@@ -693,34 +714,32 @@ octree* readCloud(){
 
 int main(int argc, char** argv){
 	tree = new octree();
-	//tree->maxX = 2;
-	//tree->minX = 0.5;
-	//tree->maxY = 2;
-	//tree->minY = 0.5;
-	//tree->maxZ = 2;
-	//tree->minZ = 0.5;
+	//ree->maxX = 2;
+	//ree->minX = 0.5;
+	//ree->maxY = 2;
+	//ree->minY = 0.5;
+	//ree->maxZ = 2;
+	//ree->minZ = 0.5;
 
-    octree* bunny = readCloud();
-    tree->root = bunny->root;
-    tree->minX = bunny->minX;
-    tree->minY = bunny->minY;
-    tree->minZ = bunny->minZ;
-    tree->maxX = bunny->maxX;
-    tree->maxY = bunny->maxY;
-    tree->maxZ = bunny->maxZ;
+   octree* bunny = readCloud();
+   tree->root = bunny->root;
+   tree->minX = bunny->minX;
+   tree->minY = bunny->minY;
+   tree->minZ = bunny->minZ;
+   tree->maxX = bunny->maxX;
+   tree->maxY = bunny->maxY;
+   tree->maxZ = bunny->maxZ;
 
+	//tree->root = new octNode();
+	//octNode* node = tree->root;
+	//for(int i = 2; i < 7; i++){
+	//	node->nodes[i] = new octNode();
+	//	node->nodes[i]->term = true;
+	//	node->nodes[i]->rgb[0] = rand() / (float) RAND_MAX;
+	//	node->nodes[i]->rgb[1] = rand() / (float) RAND_MAX;
+	//	node->nodes[i]->rgb[2] = rand() / (float) RAND_MAX;
+	//}
 
-/*
-	tree->root = new octNode();
-	octNode* node = tree->root;
-	for(int i = 2; i < 7; i++){
-		node->nodes[i] = new octNode();
-		node->nodes[i]->term = true;
-		node->nodes[i]->rgb[0] = rand() / (float) RAND_MAX;
-		node->nodes[i]->rgb[1] = rand() / (float) RAND_MAX;
-		node->nodes[i]->rgb[2] = rand() / (float) RAND_MAX;
-	}
-*/
 
 
 	glutInit(&argc, argv);
