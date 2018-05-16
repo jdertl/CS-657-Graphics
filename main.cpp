@@ -1,11 +1,11 @@
-#ifdef __APPLE__ 
-  #include <GLUT/glut.h> 
-#elif _WIN32 
-  #include <windows.h> 
-  #include <GL/glut.h> 
+#ifdef __APPLE__
+  #include <GLUT/glut.h>
+#elif _WIN32
+  #include <windows.h>
+  #include <GL/glut.h>
 #elif __unix__
  #include <GL/glut.h>
-#endif 
+#endif
 #include <float.h>
 #include <iostream>
 #include <map>
@@ -100,7 +100,7 @@ int width = 600;
 int maxRenderDepth = 1;
 int maxDepth = 50;
 
-int presetBinLevel = 10;
+int presetBinLevel = 0;
 
 float length(const vec3 &v){
 	return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
@@ -399,13 +399,13 @@ void specialFunc(int key, int x, int y){
 }
 
 
-bool comparePointMinMax(vec3 point,float minX,float minY,float minZ,float maxX,float maxY,float maxZ){
-    if (point.x > minX){
-        if(point.x < maxX){
-            if (point.y > minY){
-                if(point.y < maxY){
-                    if (point.z > minZ){
-                        if(point.z < maxZ){
+bool comparePointMinMax(vec3 point,float minX,float maxX,float minY,float maxY,float minZ,float maxZ){
+    if (point.x >= minX){
+        if(point.x <= maxX){
+            if (point.y >= minY){
+                if(point.y <= maxY){
+                    if (point.z >= minZ){
+                        if(point.z <= maxZ){
                             return true;
                         }
                     }
@@ -417,16 +417,15 @@ bool comparePointMinMax(vec3 point,float minX,float minY,float minZ,float maxX,f
 }
 
 
-
-void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float minZ,float maxX,float maxY,float maxZ, int level){
+void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float minY,float maxY,float minZ,float maxZ, int level){
     //if presetBinLevel matches then we found the max depth of the tree
     //this node will be a terminal node
     //set color according to whatever points are left in the list
-    if(level = presetBinLevel){
-        int r = 0;
-        int g = 0;
-        int b = 0;
-        int count = 0;
+    if(level == presetBinLevel){
+        float r = 0;
+        float g = 0;
+        float b = 0;
+        float count = 0;
         std::list<vec3>::iterator it;
 
         it = pointList.begin();
@@ -442,9 +441,9 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float 
 
         node->term = true;
         if(count > 0) {
-            node->rgb[0] = (r / count) / 255;
-            node->rgb[1] = (g / count) / 255;
-            node->rgb[2] = (b / count) / 255;
+            node->rgb[0] = (float)((r / count) / 255);
+            node->rgb[1] = (float)((g / count) / 255);
+            node->rgb[2] = (float)((b / count) / 255);
         }
         else{
             node->rgb[0] = 0;
@@ -455,14 +454,16 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float 
 	//we can still go deeper and subdivide the current block into smaller blocks
 	//using pretty much the same steps as for the root
     else{
+        node->term = false;
+
         float midX, midY, midZ;
         float r = 0;
         float g = 0;
         float b = 0;
 
-        midX = (tree->minX + tree->maxX) / 2;
-        midY = (tree->minY + tree->maxY) / 2;
-        midZ = (tree->minZ + tree->maxZ) / 2;
+        midX =(float) (tree->minX + tree->maxX) / 2;
+        midY =(float) (tree->minY + tree->maxY) / 2;
+        midZ =(float) (tree->minZ + tree->maxZ) / 2;
 
         std::list<vec3> lowerFrontLeft;
         std::list<vec3> lowerFrontRight;
@@ -522,24 +523,15 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float 
 		node->nodes[6] = (octNode*)malloc(sizeof(octNode));
 		node->nodes[7] = (octNode*)malloc(sizeof(octNode));
 
-		node->nodes[0]->term = false;
-		node->nodes[1]->term = false;
-		node->nodes[2]->term = false;
-		node->nodes[3]->term = false;
-		node->nodes[4]->term = false;
-		node->nodes[5]->term = false;
-		node->nodes[6]->term = false;
-		node->nodes[7]->term = false;
-
         //find the child nodes for this node
-        BuildNode(node->nodes[0], lowerFrontLeft, minX, midX, minY, midY, minZ, midZ, 0);
-        BuildNode(node->nodes[1], lowerFrontRight,midX, maxX, minY, midY, minZ, midZ, 0);
-        BuildNode(node->nodes[2], upperFrontLeft, minX, midX, midY, maxY, minZ, midZ, 0);
-        BuildNode(node->nodes[3], upperFrontRight,midX, maxX, midY, maxY, minZ, midZ, 0);
-        BuildNode(node->nodes[4], lowerBackLeft,  minX, midX, minY, midY, midZ, maxZ, 0);
-        BuildNode(node->nodes[5], lowerBackRight, midX, maxX, minY, midY, midZ, maxZ, 0);
-        BuildNode(node->nodes[6], upperBackLeft,  minX, midX, midY, maxY, midZ, maxZ, 0);
-        BuildNode(node->nodes[7], upperBackRight, midX, maxX, midY, maxY, midZ, maxZ, 0);
+        BuildNode(node->nodes[0], lowerFrontLeft, minX, midX, minY, midY, minZ, midZ, level + 1);
+        BuildNode(node->nodes[1], lowerFrontRight,midX, maxX, minY, midY, minZ, midZ, level + 1);
+        BuildNode(node->nodes[2], upperFrontLeft, minX, midX, midY, maxY, minZ, midZ, level + 1);
+        BuildNode(node->nodes[3], upperFrontRight,midX, maxX, midY, maxY, minZ, midZ, level + 1);
+        BuildNode(node->nodes[4], lowerBackLeft,  minX, midX, minY, midY, midZ, maxZ, level + 1);
+        BuildNode(node->nodes[5], lowerBackRight, midX, maxX, minY, midY, midZ, maxZ, level + 1);
+        BuildNode(node->nodes[6], upperBackLeft,  minX, midX, midY, maxY, midZ, maxZ, level + 1);
+        BuildNode(node->nodes[7], upperBackRight, midX, maxX, midY, maxY, midZ, maxZ, level + 1);
 
 
         //assign color according to the average of the child nodes
@@ -549,11 +541,13 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float 
             b += node->nodes[n]->rgb[2];
         }
 
-        node->rgb[0] = r / 7;
-        node->rgb[1] = g / 7;
-        node->rgb[2] = b / 7;
+        node->rgb[0] = (float)(r / 7);
+        node->rgb[1] = (float)(g / 7);
+        node->rgb[2] = (float)(b / 7);
     }
 }
+
+
 
 //create 8 lists one for each node which will go 10 levels deep
 //the lists will be bound by the respective min max values
@@ -565,9 +559,9 @@ octree* createTree(octree *tree, cloud *pointCloud){
     float g = 0;
     float b = 0;
 
-    midX = (tree->minX + tree->maxX) / 2;
-    midY = (tree->minY + tree->maxY) / 2;
-    midZ = (tree->minZ + tree->maxZ) / 2;
+    midX = (float) (tree->minX + tree->maxX) / 2;
+    midY = (float) (tree->minY + tree->maxY) / 2;
+    midZ = (float) (tree->minZ + tree->maxZ) / 2;
 
     std::list<vec3> lowerFrontLeft;
     std::list<vec3> lowerFrontRight;
@@ -613,6 +607,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
             upperBackRight.push_back(pointCloud->vertices[n]);
         }
     }
+    tree->root->term = false;
 
 	tree->root->nodes[0] = (octNode*)malloc(sizeof(octNode));
 	tree->root->nodes[1] = (octNode*)malloc(sizeof(octNode));
@@ -623,14 +618,6 @@ octree* createTree(octree *tree, cloud *pointCloud){
 	tree->root->nodes[6] = (octNode*)malloc(sizeof(octNode));
 	tree->root->nodes[7] = (octNode*)malloc(sizeof(octNode));
 
-	tree->root->nodes[0]->term = false;
-	tree->root->nodes[1]->term = false;
-	tree->root->nodes[2]->term = false;
-	tree->root->nodes[3]->term = false;
-	tree->root->nodes[4]->term = false;
-	tree->root->nodes[5]->term = false;
-	tree->root->nodes[6]->term = false;
-	tree->root->nodes[7]->term = false;
 
     //build the nodes using the smaller lists of points and the respective min max values
     BuildNode(tree->root->nodes[0], lowerFrontLeft, tree->minX, midX, tree->minY, midY, tree->minZ, midZ, 0);
@@ -650,9 +637,9 @@ octree* createTree(octree *tree, cloud *pointCloud){
         b += tree->root->nodes[i]->rgb[2];
     }
 
-    tree->root->rgb[0] = r / 7;
-    tree->root->rgb[1] = g / 7;
-    tree->root->rgb[2] = b / 7;
+    tree->root->rgb[0] = (float)(r / 7);
+    tree->root->rgb[1] = (float)(g / 7);
+    tree->root->rgb[2] = (float)(b / 7);
 
     return tree;
 }
@@ -669,7 +656,7 @@ octree* readCloud(){
 	cloud *pointCloud;
     octree *tree;
 
-	if ((fin=fopen("bunny.ptx", "r"))==NULL){
+	if ((fin=fopen("temp.ptx", "r"))==NULL){
     	printf("read error...\n");
     	exit(0);
  	 };
@@ -714,32 +701,15 @@ octree* readCloud(){
 
 int main(int argc, char** argv){
 	tree = new octree();
-	//ree->maxX = 2;
-	//ree->minX = 0.5;
-	//ree->maxY = 2;
-	//ree->minY = 0.5;
-	//ree->maxZ = 2;
-	//ree->minZ = 0.5;
 
-   octree* bunny = readCloud();
-   tree->root = bunny->root;
-   tree->minX = bunny->minX;
-   tree->minY = bunny->minY;
-   tree->minZ = bunny->minZ;
-   tree->maxX = bunny->maxX;
-   tree->maxY = bunny->maxY;
-   tree->maxZ = bunny->maxZ;
-
-	//tree->root = new octNode();
-	//octNode* node = tree->root;
-	//for(int i = 2; i < 7; i++){
-	//	node->nodes[i] = new octNode();
-	//	node->nodes[i]->term = true;
-	//	node->nodes[i]->rgb[0] = rand() / (float) RAND_MAX;
-	//	node->nodes[i]->rgb[1] = rand() / (float) RAND_MAX;
-	//	node->nodes[i]->rgb[2] = rand() / (float) RAND_MAX;
-	//}
-
+   	octree* bunny = readCloud();
+   	tree->root = bunny->root;
+   	tree->minX = bunny->minX;
+   	tree->minY = bunny->minY;
+   	tree->minZ = bunny->minZ;
+   	tree->maxX = bunny->maxX;
+   	tree->maxY = bunny->maxY;
+   	tree->maxZ = bunny->maxZ;
 
 
 	glutInit(&argc, argv);
