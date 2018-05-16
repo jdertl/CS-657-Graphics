@@ -1,15 +1,16 @@
-#ifdef __APPLE__
-	#include <GLUT/glut.h>
-#elif _WIN32
-	#include <windows.h>
-	#include <GL/glut.h>
-#endif
-
+#ifdef __APPLE__ 
+  #include <GLUT/glut.h> 
+#elif _WIN32 
+  #include <windows.h> 
+  #include <GL/glut.h> 
+#endif 
 #include <float.h>
 #include <iostream>
 #include <map>
 #include <math.h>
 #include <stdio.h>
+#include <list>
+#include <iterator>
 
 #define PI 3.1415926536
 
@@ -27,6 +28,7 @@ struct octree{
 
 struct vec3{
 	float x, y, z;
+    int r, g, b;
 	vec3 operator+(int i){
 		vec3 v = {x + i, y + i, z + i};
 		return v;
@@ -78,6 +80,11 @@ vec3 operator*(float d, vec3 v){
 	return v * d;
 }
 
+struct cloud{
+	int points;
+	vec3 *vertices;
+};
+
 vec3 viewpoint = {0.0, 1.0, 5.0};
 vec3 vp_u = {-1.0, 0.0, 0.0};
 vec3 vp_v = {0.0, 1.0, 0.0};
@@ -90,6 +97,8 @@ int width = 600;
 
 int maxRenderDepth = 1;
 int maxDepth = 50;
+
+int presetBinLevel = 10;
 
 float length(const vec3 &v){
 	return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
@@ -387,16 +396,322 @@ void specialFunc(int key, int x, int y){
 	glutPostRedisplay();
 }
 
+
+bool comparePointMinMax(vec3 point,float minX,float minY,float minZ,float maxX,float maxY,float maxZ){
+    if (point.x > minX){
+        if(point.x < maxX){
+            if (point.y > minY){
+                if(point.y < maxY){
+                    if (point.z > minZ){
+                        if(point.z < maxZ){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
+
+void BuildNode(octNode *node, list<vec3> pointList, float minX,float minY,float minZ,float maxX,float maxY,float maxZ, int level){
+    //if presetBinLevel matches then we found the max depth of the tree
+    //this node will be a terminal node
+    //set color according to whatever points are left in the list
+    if(level = presetBinLevel){
+        int r = 0;
+        int g = 0;
+        int b = 0;
+        int count = 0;
+        std::list<vec3>::iterator it;
+
+        it = pointList.begin();
+
+        while(it != pointList.end()){
+            r += it->r;
+            g += it->g;
+            b += it->b;
+            count++;
+            it++;
+        }
+
+
+        node->term = true;
+        if(count > 0) {
+            node->rgb[0] = (r / count) / 255;
+            node->rgb[1] = (g / count) / 255;
+            node->rgb[2] = (b / count) / 255;
+        }
+        else{
+            node->rgb[0] = 0;
+            node->rgb[1] = 0;
+            node->rgb[2] = 0;
+        }
+    }
+	//we can still go deeper and subdivide the current block into smaller blocks
+	//using pretty much the same steps as for the root
+    else{
+        float midX, midY, midZ;
+        float r = 0;
+        float g = 0;
+        float b = 0;
+
+        midX = (tree->minX + tree->maxX) / 2;
+        midY = (tree->minY + tree->maxY) / 2;
+        midZ = (tree->minZ + tree->maxZ) / 2;
+
+        std::list<vec3> lowerFrontLeft;
+        std::list<vec3> lowerFrontRight;
+        std::list<vec3> upperFrontLeft;
+        std::list<vec3> upperFrontRight;
+        std::list<vec3> lowerBackLeft;
+        std::list<vec3> lowerBackRight;
+        std::list<vec3> upperBackLeft;
+        std::list<vec3> upperBackRight;
+
+        std::list<vec3>::iterator it;
+
+        it = pointList.begin();
+
+        while(it != pointList.end()){
+            if ( comparePointMinMax(*(it),minX, midX, minY, midY, minZ, midZ)){
+                //in lowerFrontLeft
+                lowerFrontLeft.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),midX, maxX, minY, midY, minZ, midZ)){
+                //in lowerFrontRight
+                lowerFrontRight.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),minX, midX, midY, maxY, minZ, midZ)){
+                //in upperFrontLeft
+                upperFrontLeft.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),midX, maxX, midY, maxY, minZ, midZ)){
+                //in upperFrontRight
+                upperFrontRight.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),minX, midX, minY, midY, midZ, maxZ)){
+                //in lowerBackLeft
+                lowerBackLeft.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),midX, maxX, minY, midY, midZ, maxZ)){
+                //in lowerBackRight
+                lowerBackRight.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),minX, midX, midY, maxY, midZ, maxZ)){
+                //in upperBackLeft
+                upperBackLeft.push_back(*(it));
+            }
+            else if ( comparePointMinMax(*(it),midX, maxX, midY, maxY, midZ, maxZ)){
+                //in upperBackRight
+                upperBackRight.push_back(*(it));
+            }
+            it++;
+        }
+
+		node->nodes[0] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[1] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[2] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[3] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[4] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[5] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[6] = (octNode*)malloc(sizeof(octNode));
+		node->nodes[7] = (octNode*)malloc(sizeof(octNode));
+
+        //find the child nodes for this node
+        BuildNode(node->nodes[0], lowerFrontLeft, minX, midX, minY, midY, minZ, midZ, 0);
+        BuildNode(node->nodes[1], lowerFrontRight,midX, maxX, minY, midY, minZ, midZ, 0);
+        BuildNode(node->nodes[2], upperFrontLeft, minX, midX, midY, maxY, minZ, midZ, 0);
+        BuildNode(node->nodes[3], upperFrontRight,midX, maxX, midY, maxY, minZ, midZ, 0);
+        BuildNode(node->nodes[4], lowerBackLeft,  minX, midX, minY, midY, midZ, maxZ, 0);
+        BuildNode(node->nodes[5], lowerBackRight, midX, maxX, minY, midY, midZ, maxZ, 0);
+        BuildNode(node->nodes[6], upperBackLeft,  minX, midX, midY, maxY, midZ, maxZ, 0);
+        BuildNode(node->nodes[7], upperBackRight, midX, maxX, midY, maxY, midZ, maxZ, 0);
+
+
+        //assign color according to the average of the child nodes
+        for(int n = 0 ; n < 7; n++){
+            r += node->nodes[n]->rgb[0];
+            g += node->nodes[n]->rgb[1];
+            b += node->nodes[n]->rgb[2];
+        }
+
+        node->rgb[0] = r / 7;
+        node->rgb[1] = g / 7;
+        node->rgb[2] = b / 7;
+    }
+}
+
+//create 8 lists one for each node which will go 10 levels deep
+//the lists will be bound by the respective min max values
+// that way we don't have to search through all of the cloud structure as we try to find the points
+octree* createTree(octree *tree, cloud *pointCloud){
+
+    float midX, midY, midZ;
+    float r = 0;
+    float g = 0;
+    float b = 0;
+
+    midX = (tree->minX + tree->maxX) / 2;
+    midY = (tree->minY + tree->maxY) / 2;
+    midZ = (tree->minZ + tree->maxZ) / 2;
+
+    std::list<vec3> lowerFrontLeft;
+    std::list<vec3> lowerFrontRight;
+    std::list<vec3> upperFrontLeft;
+    std::list<vec3> upperFrontRight;
+    std::list<vec3> lowerBackLeft;
+    std::list<vec3> lowerBackRight;
+    std::list<vec3> upperBackLeft;
+    std::list<vec3> upperBackRight;
+
+    //create lists that contain the points that are pertinent to particular sub block
+    for( int n = 0; n < pointCloud->points; n++){
+        if ( comparePointMinMax(pointCloud->vertices[n],tree->minX, midX, tree->minY, midY, tree->minZ, midZ)){
+            //in lowerFrontLeft
+            lowerFrontLeft.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],midX, tree->maxX, tree->minY, midY, tree->minZ, midZ)){
+            //in lowerFrontRight
+            lowerFrontRight.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],tree->minX, midX, midY, tree->maxY, tree->minZ, midZ)){
+            //in upperFrontLeft
+            upperFrontLeft.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],midX, tree->maxX, midY, tree->maxY, tree->minZ, midZ)){
+            //in upperFrontRight
+            upperFrontRight.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],tree->minX, midX, tree->minY, midY, midZ, tree->maxZ)){
+            //in lowerBackLeft
+            lowerBackLeft.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],midX, tree->maxX, tree->minY, midY, midZ, tree->maxZ)){
+            //in lowerBackRight
+            lowerBackRight.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],tree->minX, midX, midY, tree->maxY, midZ, tree->maxZ)){
+            //in upperBackLeft
+            upperBackLeft.push_back(pointCloud->vertices[n]);
+        }
+        else if ( comparePointMinMax(pointCloud->vertices[n],midX, tree->maxX, midY, tree->maxY, midZ, tree->maxZ)){
+            //in upperBackRight
+            upperBackRight.push_back(pointCloud->vertices[n]);
+        }
+    }
+
+	tree->root->nodes[0] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[1] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[2] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[3] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[4] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[5] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[6] = (octNode*)malloc(sizeof(octNode));
+	tree->root->nodes[7] = (octNode*)malloc(sizeof(octNode));
+    //build the nodes using the smaller lists of points and the respective min max values
+    BuildNode(tree->root->nodes[0], lowerFrontLeft, tree->minX, midX, tree->minY, midY, tree->minZ, midZ, 0);
+    BuildNode(tree->root->nodes[1], lowerFrontRight,midX, tree->maxX, tree->minY, midY, tree->minZ, midZ, 0);
+    BuildNode(tree->root->nodes[2], upperFrontLeft, tree->minX, midX, midY, tree->maxY, tree->minZ, midZ, 0);
+    BuildNode(tree->root->nodes[3], upperFrontRight,midX, tree->maxX, midY, tree->maxY, tree->minZ, midZ, 0);
+    BuildNode(tree->root->nodes[4], lowerBackLeft,  tree->minX, midX, tree->minY, midY, midZ, tree->maxZ, 0);
+    BuildNode(tree->root->nodes[5], lowerBackRight, midX, tree->maxX, tree->minY, midY, midZ, tree->maxZ, 0);
+    BuildNode(tree->root->nodes[6], upperBackLeft,  tree->minX, midX, midY, tree->maxY, midZ, tree->maxZ, 0);
+    BuildNode(tree->root->nodes[7], upperBackRight, midX, tree->maxX, midY, tree->maxY, midZ, tree->maxZ, 0);
+
+
+    ////find color for root
+    for(int i = 0 ; i < 7; i++){
+        r += tree->root->nodes[i]->rgb[0];
+        g += tree->root->nodes[i]->rgb[1];
+        b += tree->root->nodes[i]->rgb[2];
+    }
+
+    tree->root->rgb[0] = r / 7;
+    tree->root->rgb[1] = g / 7;
+    tree->root->rgb[2] = b / 7;
+
+    return tree;
+}
+
+
+
+octree* readCloud(){
+  	int numPoints;
+	float minX,minY,minZ,maxX,maxY,maxZ;
+  	float x,y,z;
+    int r, g, b;
+  	char line[256];
+	FILE *fin;
+	cloud *pointCloud;
+    octree *tree;
+
+	if ((fin=fopen("bunny.ptx", "r"))==NULL){
+    	printf("read error...\n");
+    	exit(0);
+ 	 };
+
+	fscanf(fin, "%d\n", &numPoints);
+	fscanf(fin, "%f %f %f %f %f %f\n", &minX, &minY, &minZ, &maxX, &maxY, &maxZ);
+    tree = (octree*)malloc(sizeof(octree));
+
+    tree->minX = minX;
+    tree->minY = minY;
+    tree->minZ = minZ;
+    tree->maxX = maxX;
+    tree->maxY = maxY;
+    tree->maxZ = maxZ;
+
+    tree->root = (octNode*)malloc(sizeof(octNode));
+
+	pointCloud = (cloud*)malloc(sizeof(cloud));
+	pointCloud->points = numPoints;
+	pointCloud->vertices = (vec3*)malloc(sizeof(vec3) * numPoints);
+
+    //load all points in file onto cloud structure for easier traversal
+	for( int n = 0; n < numPoints; n++) {
+		fscanf(fin, "%f %f %f %d %d %d\n", &x, &y, &z,&r, &g, &b);
+
+		pointCloud->vertices[n].x = x;
+		pointCloud->vertices[n].y = y;
+		pointCloud->vertices[n].z = z;
+        pointCloud->vertices[n].r = r;
+        pointCloud->vertices[n].g = g;
+        pointCloud->vertices[n].b = b;
+	}
+
+  	fclose(fin);
+
+    tree = createTree(tree, pointCloud);
+    return tree;
+}
+
+
+
+
 int main(int argc, char** argv){
 	tree = new octree();
-	tree->maxX = 2;
-	tree->minX = 0.5;
-	tree->maxY = 2;
-	tree->minY = 0.5;
-	tree->maxZ = 2;
-	tree->minZ = 0.5;
-	tree->root = new octNode();
+	//tree->maxX = 2;
+	//tree->minX = 0.5;
+	//tree->maxY = 2;
+	//tree->minY = 0.5;
+	//tree->maxZ = 2;
+	//tree->minZ = 0.5;
 
+    octree* bunny = readCloud();
+    tree->root = bunny->root;
+    tree->minX = bunny->minX;
+    tree->minY = bunny->minY;
+    tree->minZ = bunny->minZ;
+    tree->maxX = bunny->maxX;
+    tree->maxY = bunny->maxY;
+    tree->maxZ = bunny->maxZ;
+
+
+/*
+	tree->root = new octNode();
 	octNode* node = tree->root;
 	for(int i = 2; i < 7; i++){
 		node->nodes[i] = new octNode();
@@ -405,7 +720,7 @@ int main(int argc, char** argv){
 		node->nodes[i]->rgb[1] = rand() / (float) RAND_MAX;
 		node->nodes[i]->rgb[2] = rand() / (float) RAND_MAX;
 	}
-
+*/
 
 
 	glutInit(&argc, argv);
