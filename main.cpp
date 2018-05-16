@@ -463,7 +463,6 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float 
         //we can still go deeper and subdivide the current block into smaller blocks
         //using pretty much the same steps as for the root
     else {
-        node->term = true;
 
         float midX, midY, midZ;
         float r = 0;
@@ -487,13 +486,7 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float 
 
         it = pointList.begin();
 
-        if (pointList.size() == 1) {
-            node->term = true;
-            node->rgb[0] = (float) (it->r / 255);
-            node->rgb[1] = (float) (it->g / 255);
-            node->rgb[2] = (float) (it->b / 255);
-        } else {
-
+            node->term = false;
             while (it != pointList.end()) {
                 if (comparePointMinMax(*(it), minX, midX, minY, midY, minZ, midZ)) {
                     //in lowerFrontLeft
@@ -617,12 +610,9 @@ void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float 
 
 
             //assign color according to the average of the child nodes
-
-
             node->rgb[0] = (float) (r / count);
             node->rgb[1] = (float) (g / count);
             node->rgb[2] = (float) (b / count);
-        }
     }
 }
 
