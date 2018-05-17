@@ -98,9 +98,7 @@ int height = 600;
 int width = 600;
 
 int maxRenderDepth = 1;
-int maxDepth = 50;
-
-int presetBinLevel = 5;
+int maxDepth = 16;
 
 float length(const vec3 &v){
     return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
@@ -418,19 +416,19 @@ bool comparePointMinMax(vec3 point,float minX,float maxX,float minY,float maxY,f
 
 
 void BuildNode(octNode *node, list<vec3> pointList, float minX,float maxX,float minY,float maxY,float minZ,float maxZ, int level){
-    //if presetBinLevel matches then we found the max depth of the tree
+    //if maxDepth matches then we found the max depth of the tree
     //this node will be a terminal node
     //set color according to whatever points are left in the list
-    node->nodes[0] = nullptr;
-    node->nodes[1] = nullptr;
-    node->nodes[2] = nullptr;
-    node->nodes[3] = nullptr;
-    node->nodes[4] = nullptr;
-    node->nodes[5] = nullptr;
-    node->nodes[6] = nullptr;
-    node->nodes[7] = nullptr;
+    node->nodes[0] = NULL;
+    node->nodes[1] = NULL;
+    node->nodes[2] = NULL;
+    node->nodes[3] = NULL;
+    node->nodes[4] = NULL;
+    node->nodes[5] = NULL;
+    node->nodes[6] = NULL;
+    node->nodes[7] = NULL;
 
-    if(level == presetBinLevel){
+    if(level == maxDepth - 1){
         float r = 0;
         float g = 0;
         float b = 0;
@@ -678,14 +676,14 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     tree->root->term = false;
 
-    tree->root->nodes[0] = nullptr;
-    tree->root->nodes[1] = nullptr;
-    tree->root->nodes[2] = nullptr;
-    tree->root->nodes[3] = nullptr;
-    tree->root->nodes[4] = nullptr;
-    tree->root->nodes[5] = nullptr;
-    tree->root->nodes[6] = nullptr;
-    tree->root->nodes[7] = nullptr;
+    tree->root->nodes[0] = NULL;
+    tree->root->nodes[1] = NULL;
+    tree->root->nodes[2] = NULL;
+    tree->root->nodes[3] = NULL;
+    tree->root->nodes[4] = NULL;
+    tree->root->nodes[5] = NULL;
+    tree->root->nodes[6] = NULL;
+    tree->root->nodes[7] = NULL;
 
 
     ////build the nodes using the smaller lists of points and the respective min max values
@@ -697,7 +695,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
 
     if(lowerFrontLeft.size() > 0){
         tree->root->nodes[0] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[0], lowerFrontLeft, tree->minX, midX, tree->minY, midY, tree->minZ, midZ, 0);
+        BuildNode(tree->root->nodes[0], lowerFrontLeft, tree->minX, midX, tree->minY, midY, tree->minZ, midZ, 1);
         r += tree->root->nodes[0]->rgb[0];
         g += tree->root->nodes[0]->rgb[1];
         b += tree->root->nodes[0]->rgb[2];
@@ -705,7 +703,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(lowerFrontRight.size() > 0){
         tree->root->nodes[1] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[1], lowerFrontRight,midX, tree->maxX, tree->minY, midY, tree->minZ, midZ, 0);
+        BuildNode(tree->root->nodes[1], lowerFrontRight,midX, tree->maxX, tree->minY, midY, tree->minZ, midZ, 1);
         r += tree->root->nodes[1]->rgb[0];
         g += tree->root->nodes[1]->rgb[1];
         b += tree->root->nodes[1]->rgb[2];
@@ -713,7 +711,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(upperFrontLeft.size() > 0){
         tree->root->nodes[2] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[2], upperFrontLeft, tree->minX, midX, midY, tree->maxY, tree->minZ, midZ, 0);
+        BuildNode(tree->root->nodes[2], upperFrontLeft, tree->minX, midX, midY, tree->maxY, tree->minZ, midZ, 1);
         r += tree->root->nodes[2]->rgb[0];
         g += tree->root->nodes[2]->rgb[1];
         b += tree->root->nodes[2]->rgb[2];
@@ -721,7 +719,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(upperFrontRight.size() > 0){
         tree->root->nodes[3] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[3], upperFrontRight,midX, tree->maxX, midY, tree->maxY, tree->minZ, midZ, 0);
+        BuildNode(tree->root->nodes[3], upperFrontRight,midX, tree->maxX, midY, tree->maxY, tree->minZ, midZ, 1);
         r += tree->root->nodes[3]->rgb[0];
         g += tree->root->nodes[3]->rgb[1];
         b += tree->root->nodes[3]->rgb[2];
@@ -729,7 +727,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(lowerBackLeft.size() > 0){
         tree->root->nodes[4] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[4], lowerBackLeft,  tree->minX, midX, tree->minY, midY, midZ, tree->maxZ, 0);
+        BuildNode(tree->root->nodes[4], lowerBackLeft,  tree->minX, midX, tree->minY, midY, midZ, tree->maxZ, 1);
         r += tree->root->nodes[4]->rgb[0];
         g += tree->root->nodes[4]->rgb[1];
         b += tree->root->nodes[4]->rgb[2];
@@ -737,7 +735,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(lowerBackRight.size() > 0){
         tree->root->nodes[5] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[5], lowerBackRight, midX, tree->maxX, tree->minY, midY, midZ, tree->maxZ, 0);
+        BuildNode(tree->root->nodes[5], lowerBackRight, midX, tree->maxX, tree->minY, midY, midZ, tree->maxZ, 1);
         r += tree->root->nodes[5]->rgb[0];
         g += tree->root->nodes[5]->rgb[1];
         b += tree->root->nodes[5]->rgb[2];
@@ -745,7 +743,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(upperBackLeft.size() > 0){
         tree->root->nodes[6] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[6], upperBackLeft,  tree->minX, midX, midY, tree->maxY, midZ, tree->maxZ, 0);
+        BuildNode(tree->root->nodes[6], upperBackLeft,  tree->minX, midX, midY, tree->maxY, midZ, tree->maxZ, 1);
         r += tree->root->nodes[6]->rgb[0];
         g += tree->root->nodes[6]->rgb[1];
         b += tree->root->nodes[6]->rgb[2];
@@ -753,7 +751,7 @@ octree* createTree(octree *tree, cloud *pointCloud){
     }
     if(upperBackRight.size() > 0){
         tree->root->nodes[7] = (octNode*)malloc(sizeof(octNode));
-        BuildNode(tree->root->nodes[7], upperBackRight, midX, tree->maxX, midY, tree->maxY, midZ, tree->maxZ, 0);
+        BuildNode(tree->root->nodes[7], upperBackRight, midX, tree->maxX, midY, tree->maxY, midZ, tree->maxZ, 1);
         r += tree->root->nodes[7]->rgb[0];
         g += tree->root->nodes[7]->rgb[1];
         b += tree->root->nodes[7]->rgb[2];
@@ -770,17 +768,32 @@ octree* createTree(octree *tree, cloud *pointCloud){
 
 
 
-octree* readCloud(){
+octree* readCloud(int argc, char** argv){
     int numPoints;
     float minX,minY,minZ,maxX,maxY,maxZ;
     float x,y,z;
     int r, g, b;
-    char line[256];
     FILE *fin;
     cloud *pointCloud;
     octree *tree;
 
-    if ((fin=fopen("bunny.ptx", "r"))==NULL){
+	if(argc > 1){
+		maxDepth = atoi(argv[1]);
+		if(maxDepth == 0){
+			printf("Max depth argument was unreadable or 0\n");
+			exit(1);
+		}
+	}
+
+	char filename[256];
+	if(argc > 2){
+		strcpy(filename, argv[2]);
+	}
+	else{
+		strcpy(filename, "model.ptx");
+	}
+
+    if ((fin=fopen(filename, "r"))==NULL){
         printf("read error...\n");
         exit(0);
     };
@@ -826,7 +839,7 @@ octree* readCloud(){
 int main(int argc, char** argv){
     tree = new octree();
 
-    octree* bunny = readCloud();
+    octree* bunny = readCloud(argc, argv);
     tree->root = bunny->root;
     tree->minX = bunny->minX;
     tree->minY = bunny->minY;
